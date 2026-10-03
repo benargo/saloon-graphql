@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Saloon\Exceptions\Request\Statuses\BadGatewayException;
+use Saloon\Exceptions\Request\ServerException;
 use Saloon\Exceptions\Request\Statuses\InternalServerErrorException;
 use Saloon\Exceptions\Request\Statuses\ServiceUnavailableException;
 use Saloon\Exceptions\Request\Statuses\TooManyRequestsException;
@@ -65,7 +65,7 @@ it('leaves a 500 without errors to Saloon', function (): void {
 
 it('leaves a 502 with an HTML body to Saloon', function (): void {
     sendThrough(new TestConnector, '<html>Bad Gateway</html>', 502, ['Content-Type' => 'text/html']);
-})->throws(BadGatewayException::class);
+})->throws(ServerException::class);
 
 it('does not throw JsonException for a malformed JSON body', function (): void {
     expect(sendThrough(new TestConnector, '{"errors": [')->status())->toBe(200);
