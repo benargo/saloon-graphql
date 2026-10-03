@@ -13,7 +13,7 @@ class GraphQLRequestServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(GraphQLRequest::class);
+        //
     }
 
     /**
