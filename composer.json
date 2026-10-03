@@ -32,12 +32,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Saloon\\GraphQLRequest\\": "src/"
+            "Saloon\\GraphQL\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Saloon\\GraphQLRequest\\Tests\\": "tests/",
+            "Saloon\\GraphQL\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Factories\\": "workbench/database/factories/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
@@ -87,7 +87,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Saloon\\GraphQLRequest\\GraphQLRequestServiceProvider"
+                "Saloon\\GraphQL\\GraphQLRequestServiceProvider"
             ]
         }
     },

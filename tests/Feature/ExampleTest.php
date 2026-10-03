@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Saloon\GraphQLRequest\GraphQLRequest;
+use Saloon\GraphQL\GraphQLRequest;
 
 it('resolves the singleton', function () {
     expect(app(GraphQLRequest::class))->toBeInstanceOf(GraphQLRequest::class);

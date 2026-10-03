@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Saloon\GraphQLRequest;
+namespace Saloon\GraphQL;
 
 use Illuminate\Support\ServiceProvider;
 
