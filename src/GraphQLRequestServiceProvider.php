@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Saloon\GraphQLRequest;
+namespace Saloon\GraphQL;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +13,7 @@ class GraphQLRequestServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(GraphQLRequest::class);
+        //
     }
 
     /**

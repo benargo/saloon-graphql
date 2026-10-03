@@ -8,7 +8,9 @@
     processIsolation="false"
     stopOnFailure="false"
     executionOrder="random"
+    failOnNotice="true"
     failOnWarning="true"
+    failOnDeprecation="true"
     failOnRisky="true"
     failOnEmptyTestSuite="true"
     beStrictAboutOutputDuringTests="true"
@@ -26,7 +28,7 @@
             <directory>tests/Unit</directory>
         </testsuite>
     </testsuites>
-    <source>
+    <source ignoreIndirectDeprecations="true">
         <include>
             <directory suffix=".php">src</directory>
         </include>

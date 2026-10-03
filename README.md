@@ -10,27 +10,142 @@
     <a href="https://packagist.org/packages/benargo/saloon-graphql"><img src="https://img.shields.io/packagist/dt/benargo/saloon-graphql.svg?style=flat-square" alt="Total Downloads"></a>
 </p>
 
-API-agnostic GraphQL layer for Saloon
+An API-agnostic GraphQL layer for [Saloon](https://docs.saloon.dev) v4. It gives you a base request that sends `{query, variables}` as JSON, and a trait that turns GraphQL `errors` into exceptions, including on HTTP 200 responses.
+
+The package depends only on `saloonphp/saloon`. In a Laravel app, the service provider is auto-discovered, but Laravel is not required.
 
 ## Installation
-
-You can install the package via Composer:
 
 ```bash
 composer require benargo/saloon-graphql
 ```
 
-You may publish all of the package's resources at once:
-
-```bash
-php artisan vendor:publish --tag="saloon-graphql"
-```
-
-Or, you may publish each resource individually:
-
 ## Usage
 
-<!-- Add a basic usage example here. -->
+### Writing a request
+
+Extend `GraphQLRequest`, then define the endpoint, the GraphQL document and, optionally, the variables:
+
+```php
+use Saloon\GraphQL\GraphQLRequest;
+
+class GetCharacter extends GraphQLRequest
+{
+    public function __construct(private int $id) {}
+
+    public function resolveEndpoint(): string
+    {
+        return '/graphql';
+    }
+
+    protected function graphQLQuery(): string
+    {
+        return <<<'GRAPHQL'
+            query Character($id: Int!) {
+                character(id: $id) { id name }
+            }
+            GRAPHQL;
+    }
+
+    protected function variables(): array
+    {
+        return ['id' => $this->id];
+    }
+}
+```
+
+Requests are sent as `POST` with a JSON body of exactly `{"query": ..., "variables": ...}`. When `variables()` returns an empty array, the request sends `"variables": {}`, because GraphQL requires an object. A list-shaped return value throws an `InvalidArgumentException`. Return a `stdClass` for an empty nested input object, since an empty array encodes as `[]`.
+
+The document method is called `graphQLQuery()` because Saloon's `Request::query()` already manages URL query parameters.
+
+### Handling GraphQL errors
+
+GraphQL servers often report errors in a `200 OK` response. Add `HandlesGraphQLErrors` to your connector, or to an individual request, so that those responses count as failures:
+
+```php
+use Saloon\GraphQL\Traits\HandlesGraphQLErrors;
+use Saloon\Http\Connector;
+use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
+
+class MyApiConnector extends Connector
+{
+    use AlwaysThrowOnErrors;
+    use HandlesGraphQLErrors;
+
+    public function resolveBaseUrl(): string
+    {
+        return 'https://api.example.com';
+    }
+}
+```
+
+A response counts as a GraphQL failure when it has a JSON content type and a non-empty `errors` list. That includes partial results that carry both `data` and `errors`. All other responses, including malformed JSON and HTML error pages, go through Saloon's normal status-based handling, so a 500 still throws `InternalServerErrorException`. Responses with an error HTTP status (4xx or 5xx) keep Saloon's status-specific exception even when the body has GraphQL `errors`, so `UnauthorizedException` and `TooManyRequestsException` still fire. The trait's `hasRequestFailed()` returns `null`, never `false`, for these, so it never hides a failed HTTP status.
+
+To accept partial results, override `shouldTreatGraphQLErrorsAsFailure()`:
+
+```php
+protected function shouldTreatGraphQLErrorsAsFailure(Response $response): bool
+{
+    return $response->json('data') === null;
+}
+```
+
+### Inspecting the exception
+
+```php
+use Saloon\GraphQL\Exceptions\GraphQLException;
+
+try {
+    $connector->send(new GetCharacter(42));
+} catch (GraphQLException $exception) {
+    $exception->getErrors();                    // The raw list of GraphQL errors
+    $exception->getFirstError();                // The first error message, or null
+    $exception->hasErrorMatching('/not found/i');
+    $exception->getResponse();                  // The Saloon response
+}
+```
+
+`GraphQLException` extends Saloon's `RequestException`. Its default message is `GraphQL request failed: {first error message}`.
+
+### Throwing your own exception
+
+Override `createGraphQLException()` to return a subclass:
+
+```php
+use Saloon\GraphQL\Exceptions\GraphQLException;
+use Saloon\Http\Response;
+
+class MyApiConnector extends Connector
+{
+    use HandlesGraphQLErrors;
+
+    protected function createGraphQLException(Response $response, ?Throwable $senderException): GraphQLException
+    {
+        return new MyApiGraphQLException($response, previous: $senderException);
+    }
+}
+```
+
+Saloon asks the request for an exception before it asks the connector. If both use `HandlesGraphQLErrors`, the request's `createGraphQLException()` wins. Put the trait in one place, or override `createGraphQLException()` on both.
+
+### Falling back for non-GraphQL failures
+
+`getRequestException()` returns `null` when a response has no GraphQL errors, so Saloon's default exceptions apply. To use your own exception instead, alias the trait method:
+
+```php
+class MyApiConnector extends Connector
+{
+    use HandlesGraphQLErrors {
+        getRequestException as getGraphQLRequestException;
+    }
+
+    public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
+    {
+        return $this->getGraphQLRequestException($response, $senderException)
+            ?? new MyApiException($response, previous: $senderException);
+    }
+}
+```
 
 ## Changelog
 

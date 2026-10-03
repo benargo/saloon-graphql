@@ -18,26 +18,30 @@
     ],
     "require": {
         "php": "^8.3",
-        "illuminate/support": "^12.0||^13.0"
+        "saloonphp/saloon": "^4"
     },
     "require-dev": {
+        "illuminate/support": "^12.0||^13.0",
         "larastan/larastan": "^3.9",
-        "laravel/pint": "^1.29",
         "laravel/pao": "^1.0",
+        "laravel/pint": "^1.29",
         "orchestra/testbench": "^10.0||^11.0",
         "pestphp/pest": "^4.6||^5.0",
         "pestphp/pest-plugin-laravel": "^4.1||^5.0",
         "pestphp/pest-plugin-type-coverage": "^4.0||^5.0",
         "phpstan/extension-installer": "^1.4"
     },
+    "suggest": {
+        "illuminate/support": "Required only for Laravel package auto-discovery of the service provider."
+    },
     "autoload": {
         "psr-4": {
-            "Saloon\\GraphQLRequest\\": "src/"
+            "Saloon\\GraphQL\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Saloon\\GraphQLRequest\\Tests\\": "tests/",
+            "Saloon\\GraphQL\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Factories\\": "workbench/database/factories/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
@@ -87,7 +91,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Saloon\\GraphQLRequest\\GraphQLRequestServiceProvider"
+                "Saloon\\GraphQL\\GraphQLRequestServiceProvider"
             ]
         }
     },
