@@ -117,6 +117,8 @@ class MyApiConnector extends Connector
 }
 ```
 
+Saloon asks the request for an exception before it asks the connector. If both use `HandlesGraphQLErrors`, the request's `createGraphQLException()` wins. Put the trait in one place, or override `createGraphQLException()` on both.
+
 ### Falling back for non-GraphQL failures
 
 `getRequestException()` returns `null` when a response has no GraphQL errors, so Saloon's default exceptions apply. To use your own exception instead, alias the trait method:

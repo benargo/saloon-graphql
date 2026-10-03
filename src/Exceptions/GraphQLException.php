@@ -48,11 +48,20 @@ class GraphQLException extends RequestException
             return [];
         }
 
-        if (! is_array($body) || ! is_array($body['errors'] ?? null)) {
+        if (! is_array($body) || ! is_array($body['errors'] ?? null) || ! array_is_list($body['errors'])) {
             return [];
         }
 
-        return array_values(array_filter($body['errors'], is_array(...)));
+        // Every entry is kept, so a non-empty list always counts as a failure.
+        // Non-compliant servers sometimes send bare strings as errors.
+        return array_map(
+            static fn (mixed $error): array => match (true) {
+                is_array($error) => $error,
+                is_string($error) => ['message' => $error],
+                default => [],
+            },
+            $body['errors'],
+        );
     }
 
     /**

@@ -40,6 +40,18 @@ it('succeeds for a 200 without errors', function (array $body): void {
     'string errors' => [['errors' => 'boom']],
 ]);
 
+it('throws for a non-empty errors list whose entries are not objects', function (array $errors, string $message): void {
+    expect(fn () => sendThrough(new TestConnector, ['errors' => $errors]))
+        ->toThrow(GraphQLException::class, $message);
+})->with([
+    'string entry' => [['Not authorised'], 'GraphQL request failed: Not authorised'],
+    'null entry' => [[null], 'GraphQL request failed: Unknown error'],
+]);
+
+it('does not treat a keyed errors map as a GraphQL failure', function (): void {
+    expect(sendThrough(new TestConnector, ['errors' => ['a' => ['message' => 'x']]])->status())->toBe(200);
+});
+
 it('throws for a partial result with data and errors', function (): void {
     sendThrough(new TestConnector, ['data' => ['thing' => null], 'errors' => [['message' => 'Partial']]]);
 })->throws(GraphQLException::class);
@@ -110,3 +122,29 @@ it('works when used on a request', function (): void {
         ->withMockClient(new MockClient([MockResponse::make(['errors' => [['message' => 'Boom']]], 200, ['Content-Type' => 'application/json'])]))
         ->send($request);
 })->throws(GraphQLException::class);
+
+it('uses the request exception over the connector when both use the trait', function (): void {
+    $connector = new class extends TestConnector
+    {
+        protected function createGraphQLException(Response $response, ?Throwable $senderException): GraphQLException
+        {
+            return new CustomGraphQLException($response, previous: $senderException);
+        }
+    };
+    $request = new class extends TestRequest
+    {
+        use HandlesGraphQLErrors;
+    };
+
+    try {
+        $connector
+            ->withMockClient(new MockClient([MockResponse::make(['errors' => [['message' => 'Boom']]], 200, ['Content-Type' => 'application/json'])]))
+            ->send($request);
+    } catch (GraphQLException $exception) {
+        expect($exception::class)->toBe(GraphQLException::class);
+
+        return;
+    }
+
+    test()->fail('Expected a GraphQLException.');
+});

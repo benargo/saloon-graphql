@@ -67,3 +67,8 @@ it('has no errors when the body is not a JSON object', function (string $body, a
     'json null' => ['null', ['Content-Type' => 'application/json']],
     'json scalar' => ['"oops"', ['Content-Type' => 'application/json']],
 ]);
+
+it('normalises error entries that are not objects', function (): void {
+    expect((new GraphQLException(graphQLResponse(['errors' => ['Not authorised', null]])))->getErrors())
+        ->toBe([['message' => 'Not authorised'], []]);
+});
