@@ -72,3 +72,7 @@ it('normalises error entries that are not objects', function (): void {
     expect((new GraphQLException(graphQLResponse(['errors' => ['Not authorised', null]])))->getErrors())
         ->toBe([['message' => 'Not authorised'], []]);
 });
+
+it('rejects an invalid regular expression', function () use ($errors): void {
+    (new GraphQLException(graphQLResponse(['errors' => $errors])))->hasErrorMatching('not found');
+})->throws(InvalidArgumentException::class, 'Invalid regular expression');

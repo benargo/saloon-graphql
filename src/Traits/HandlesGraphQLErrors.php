@@ -20,13 +20,28 @@ trait HandlesGraphQLErrors
     }
 
     /**
-     * Returns null for non-GraphQL failures so Saloon's default exceptions apply.
+     * Returns null for non-GraphQL failures and for error HTTP statuses, so
+     * Saloon's status-specific exceptions (401, 429, 503 and so on) still apply.
      */
     public function getRequestException(Response $response, ?Throwable $senderException): ?Throwable
     {
+        if ($response->status() >= 400) {
+            return null;
+        }
+
         return $this->hasGraphQLErrors($response)
             ? $this->createGraphQLException($response, $senderException)
             : null;
+    }
+
+    /**
+     * Decide whether a response carrying GraphQL errors is a failure. Override
+     * this to accept partial results, for example by returning false when the
+     * response also has usable data.
+     */
+    protected function shouldTreatGraphQLErrorsAsFailure(Response $response): bool
+    {
+        return true;
     }
 
     protected function createGraphQLException(Response $response, ?Throwable $senderException): GraphQLException
@@ -36,6 +51,8 @@ trait HandlesGraphQLErrors
 
     private function hasGraphQLErrors(Response $response): bool
     {
-        return $response->isJson() && GraphQLException::errorsFrom($response) !== [];
+        return $response->isJson()
+            && GraphQLException::errorsFrom($response) !== []
+            && $this->shouldTreatGraphQLErrorsAsFailure($response);
     }
 }

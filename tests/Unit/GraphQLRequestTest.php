@@ -57,3 +57,15 @@ it('encodes default variables as an empty JSON object on the wire', function ():
     expect((string) $connector->send(requestWithoutVariables())->getPsrRequest()->getBody())
         ->toBe('{"query":"{ ping }","variables":{}}');
 });
+
+it('rejects variables that are a list', function (): void {
+    $request = new class extends TestRequest
+    {
+        protected function variables(): array
+        {
+            return ['a', 'b'];
+        }
+    };
+
+    $request->body()->all();
+})->throws(InvalidArgumentException::class, 'must be a map');

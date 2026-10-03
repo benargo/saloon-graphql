@@ -54,7 +54,7 @@ class GetCharacter extends GraphQLRequest
 }
 ```
 
-Requests are sent as `POST` with a JSON body of exactly `{"query": ..., "variables": ...}`. When `variables()` returns an empty array, the request sends `"variables": {}`, because GraphQL requires an object.
+Requests are sent as `POST` with a JSON body of exactly `{"query": ..., "variables": ...}`. When `variables()` returns an empty array, the request sends `"variables": {}`, because GraphQL requires an object. A list-shaped return value throws an `InvalidArgumentException`. Return a `stdClass` for an empty nested input object, since an empty array encodes as `[]`.
 
 The document method is called `graphQLQuery()` because Saloon's `Request::query()` already manages URL query parameters.
 
@@ -79,7 +79,16 @@ class MyApiConnector extends Connector
 }
 ```
 
-A response counts as a GraphQL failure when it has a JSON content type and a non-empty `errors` list. That includes partial results that carry both `data` and `errors`. All other responses, including malformed JSON and HTML error pages, go through Saloon's normal status-based handling, so a 500 still throws `InternalServerErrorException`. The trait's `hasRequestFailed()` returns `null`, never `false`, for these, so it never hides a failed HTTP status.
+A response counts as a GraphQL failure when it has a JSON content type and a non-empty `errors` list. That includes partial results that carry both `data` and `errors`. All other responses, including malformed JSON and HTML error pages, go through Saloon's normal status-based handling, so a 500 still throws `InternalServerErrorException`. Responses with an error HTTP status (4xx or 5xx) keep Saloon's status-specific exception even when the body has GraphQL `errors`, so `UnauthorizedException` and `TooManyRequestsException` still fire. The trait's `hasRequestFailed()` returns `null`, never `false`, for these, so it never hides a failed HTTP status.
+
+To accept partial results, override `shouldTreatGraphQLErrorsAsFailure()`:
+
+```php
+protected function shouldTreatGraphQLErrorsAsFailure(Response $response): bool
+{
+    return $response->json('data') === null;
+}
+```
 
 ### Inspecting the exception
 

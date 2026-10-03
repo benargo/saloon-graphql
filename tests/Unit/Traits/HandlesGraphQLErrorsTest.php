@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use Saloon\Exceptions\Request\Statuses\BadGatewayException;
 use Saloon\Exceptions\Request\Statuses\InternalServerErrorException;
+use Saloon\Exceptions\Request\Statuses\ServiceUnavailableException;
+use Saloon\Exceptions\Request\Statuses\TooManyRequestsException;
+use Saloon\Exceptions\Request\Statuses\UnauthorizedException;
 use Saloon\GraphQL\Exceptions\GraphQLException;
 use Saloon\GraphQL\Tests\Fixtures\CustomGraphQLException;
 use Saloon\GraphQL\Tests\Fixtures\PlainConnector;
@@ -147,4 +150,27 @@ it('uses the request exception over the connector when both use the trait', func
     }
 
     test()->fail('Expected a GraphQLException.');
+});
+
+it('keeps the status-specific exception for an error status with GraphQL errors', function (int $status, string $exception): void {
+    expect(fn () => sendThrough(new TestConnector, ['errors' => [['message' => 'Nope']]], $status))
+        ->toThrow($exception);
+})->with([
+    '401' => [401, UnauthorizedException::class],
+    '429' => [429, TooManyRequestsException::class],
+    '503' => [503, ServiceUnavailableException::class],
+]);
+
+it('lets consumers accept partial results', function (): void {
+    $connector = new class extends TestConnector
+    {
+        protected function shouldTreatGraphQLErrorsAsFailure(Response $response): bool
+        {
+            return ($response->json('data') ?? null) === null;
+        }
+    };
+
+    expect(sendThrough($connector, ['data' => ['a' => 1], 'errors' => [['message' => 'b failed']]])->status())->toBe(200);
+    expect(fn () => sendThrough($connector, ['data' => null, 'errors' => [['message' => 'x']]]))
+        ->toThrow(GraphQLException::class);
 });
