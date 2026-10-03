@@ -24,7 +24,7 @@ class GraphQLException extends RequestException
     /**
      * Parsed errors per response, so each body is decoded only once.
      *
-     * @var WeakMap<Response, array<int, array<string, mixed>>>|null
+     * @var WeakMap<object, array<int, array<string, mixed>>>|null
      */
     private static ?WeakMap $cache = null;
 
